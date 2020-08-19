@@ -1,23 +1,11 @@
 import React, { Component } from 'react';
 import {
-  View,
   StyleSheet,
-  TouchableOpacity,
-  Image,
-  SafeAreaView,
-  Text
 } from 'react-native';
 import * as RNLocalize from "react-native-localize";
 import AsyncStorage from '@react-native-community/async-storage';
-import IMAGES from './assets/images';
-import CONSTANTS from './assets/appConstants';
-import GameOverComponent from './components/GameOver';
-import ClearComponent from './components/Clear';
-import PauseComponent from './components/Pause';
-import ActorComponent, { ActorType, ActorPoints } from './components/Actor';
-import StartComponent from './components/Start';
-import { setI18nConfig, translate } from './services/translationService';
-import CreditsComponent from './components/Credits';
+import { ActorType, ActorPoints } from './components/Actor';
+import { setI18nConfig } from './services/translationService';
 import GameFrameComponent from './components/GameFrame';
 
 const DEFAULT_TIME = 20;

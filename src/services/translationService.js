@@ -5,7 +5,6 @@ import memoize from "lodash.memoize"; // Use for caching/memoize for better perf
 const translationGetters = {
     // lazy requires (metro bundler does not support symlinks)
     en: () => require("../assets/lang/en.json"),
-    fr: () => require("../assets/lang/fr.json")
 };
 
 export const translate = memoize(
