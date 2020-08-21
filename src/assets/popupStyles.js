@@ -112,8 +112,8 @@ export default styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'space-evenly',
-        width: Constants.MAX_WIDTH*0.8,
-        height: Constants.MAX_HEIGHT*0.5,
+        width: Constants.MAX_WIDTH*0.9,
+        height: Constants.MAX_HEIGHT*0.6,
     },
     startPanelTitle:{
         position: 'absolute',

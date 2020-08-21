@@ -4,7 +4,6 @@ import {
     Text,
     TouchableOpacity,
     Image,
-    Linking
 } from 'react-native';
 import styles from '../assets/popupStyles';
 import { translate } from '../services/translationService';
@@ -12,9 +11,8 @@ import IMAGES from '../assets/images';
 
 export default class StartComponent extends Component {
     constructor(props) {
-        super(props)
+        super(props);
     }
-
     render() {
         return (
             <View style={styles.clearScreen}>

